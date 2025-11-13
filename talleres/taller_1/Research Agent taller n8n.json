@@ -1,0 +1,187 @@
+{
+  "name": "Research Agent taller n8n",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -288,
+        -112
+      ],
+      "id": "c4f0c940-2f90-456f-a6a2-1c7d2bced59b",
+      "name": "When chat message received",
+      "webhookId": "8b6cdd29-8124-4ca5-8b05-c8d9ef90016d"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are a research assistant conducting research on the user's input topic. For context, today's date is {{$today.format('yyyy-MM-dd')}}.\n\nSpeak in Spanish by default! If the user speaks in another language, speak in that language.\n\nYou have access to a comprehensive research tool that can conduct deep analysis on any topic. When a user requests research, ALWAYS ask 1-2 clarifying questions first to ensure you conduct the most valuable and targeted research possible.\n\n## When to use the research tool:\n- User asks for research on specific topics, technologies, companies, or markets\n- User wants to understand trends, opportunities, or competitive landscapes  \n- User needs market analysis, technical insights, or strategic recommendations\n- User asks questions like \"research X\", \"analyze Y\", \"tell me about Z market\", \"what's happening with [technology]\"\n\n## Before conducting research, ask clarifying questions such as:\n\n**For technology research:**\n- \"Are you more interested in the technical capabilities, market adoption, or commercial applications of [technology]?\"\n- \"What specific industry or use case are you most interested in?\"\n- \"Are you looking at this from an investment perspective, competitive analysis, or implementation opportunity?\"\n\n**For market research:**\n- \"What geographic region are you most interested in - global, US, Europe, or a specific market?\"\n- \"Are you looking for current market size, growth projections, or competitive landscape?\"\n- \"What's your primary focus - market opportunities, barriers to entry, or key players?\"\n\n**For company/competitive research:**\n- \"Are you interested in their technology, business model, market position, or recent developments?\"\n- \"Should I focus on specific product lines or their overall strategic direction?\"\n- \"Are you looking at them as a potential partner, competitor, or investment opportunity?\"\n\n## After getting clarification:\nCombine the original request with their answers to create a comprehensive, specific research query.\n\nExample flow:\nUser: \"I want to research quantum computing\"\nYou: \"I'd be happy to research quantum computing for you! To provide the most valuable insights, could you tell me: 1) Are you more interested in the current technological readiness or the commercial market opportunities? 2) Is there a specific industry application you're most curious about, like finance, pharmaceuticals, or cybersecurity?\"\nUser: [answers]\nYou: [calls research tool with detailed, targeted query]\n\n## Do NOT use this tool for:\n- Simple factual questions that don't require research\n- General conversation or small talk\n- Questions already answered in our conversation\n\nAlways aim to make your research as targeted and actionable as possible based on the user's specific needs and context."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -64
+      ],
+      "id": "0ebbd4e5-08c2-45b0-9050-f2281112aa52",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        128
+      ],
+      "id": "5608bdf5-98d8-4a82-8c56-70119bc7a732",
+      "name": "Simple Memory",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "description": "=Transforms a structured research brief into a deep, AI-powered research report and returns ready-to-share assets.\n\nInput format (JSON object):\n{\n  \"brief\": \"<concise research brief with topic, context, goals and key questions>\",\n  \"sessionId\": \"<session identifier>\",\n  \"language\": \"<user language, e.g. 'English', 'Spanish', etc.>\"\n}\n\nBehavior:\nWhen called, this tool:\n- Performs multi-step research across multiple, up-to-date sources.\n- Prioritizes credible references and cross-checks key facts.\n- Writes the report in the language specified by `language`.\n- Generates a complete HTML research report suitable for conversion to PDF.\n\nOutput format (array with one result object):\n[\n  {\n    \"research\": \"<full research report in HTML>\",\n    \"executive_summary\": \"<short textual summary of the main findings>\",\n    \"sources\": [\n      { \"title\": \"<source title>\", \"url\": \"<source URL>\" },\n      ...\n    ],\n    \"research_url\": \"<public URL of the generated PDF version of the report>\"\n  }\n]\n\nField semantics:\n- `research`: Full, well-structured research report in HTML (headings, paragraphs, lists, sources section, etc.).\n- `executive_summary`: High-level summary that can be shown directly to the user or used for follow-up questions.\n- `sources`: List of the main sources used in the research, with titles and URLs for citation and transparency.\n- `research_url`: Direct link to the PDF version of the report. The calling agent SHOULD show this URL to the user so they can open, download, or share the complete report.\n\nUse this tool whenever you already have a clear research brief (not raw user chat) and need rigorous, structured research to support decisions, understand a technology, or explore a market or industry trend. After the tool completes, present the key findings and explicitly share `research_url` with the user as the downloadable PDF of the full report.\n\n",
+        "workflowId": {
+          "__rl": true,
+          "value": "44AJMnw7f3TNaMpG",
+          "mode": "list",
+          "cachedResultName": "Sub-Workflow research"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "brief": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('brief', ``, 'string') }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "language": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('language', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "investigación"
+          ],
+          "schema": [
+            {
+              "id": "brief",
+              "displayName": "brief",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "language",
+              "displayName": "language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        112
+      ],
+      "id": "4bcdcab7-f7a4-475b-9db6-b31f2c857183",
+      "name": "Call n8n Workflow Tool"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        112
+      ],
+      "id": "d217c65c-332e-4ee6-b95c-394fcd30cbc1",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "KEgVmHq4EEilZVQR",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call n8n Workflow Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b03f29d4-3472-4fb3-a3ef-d3151777f5cb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "22b6dc15401a371393f304a8b794ac6e288480aac7df45828467bb69688323ea"
+  },
+  "id": "FGRLpU66QEhBLAZL",
+  "tags": []
+}

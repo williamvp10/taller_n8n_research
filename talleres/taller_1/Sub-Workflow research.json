@@ -1,0 +1,496 @@
+{
+  "name": "Sub-Workflow research",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "brief"
+            },
+            {
+              "name": "sessionId"
+            },
+            {
+              "name": "language"
+            }
+          ]
+        }
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        224,
+        240
+      ],
+      "alwaysOutputData": false,
+      "notesInFlow": false,
+      "retryOnFail": false,
+      "maxTries": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.brief }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are a research assistant conducting research on the user's input topic. For context, today's date is {{ $today.format('yyyy-MM-dd') }} and language is {{ $json.language }}\n<Task>\nYour job is to use tools to gather information about the user's input topic.\nYou can use any of the tools provided to you to find resources that can help answer the research question. You can call these tools in series or in parallel, your research is conducted in a tool-calling loop.\n</Task>\n\n<Available Tools>\nYou have access to one main tools:\n1. **tavily_search**: For conducting web searches to gather information\n\n</Available Tools>\n\n<Instructions>\nThink like a human researcher with limited time. Follow these steps:\n\n1. **Read the question carefully** - What specific information does the user need?\n2. **Start with broader searches** - Use broad, comprehensive queries first\n3. **After each search, pause and assess** - Do I have enough to answer? What's still missing?\n4. **Execute narrower searches as you gather information** - Fill in the gaps\n5. **Stop when you can answer confidently** - Don't keep searching for perfection\n</Instructions>\n\n<Hard Limits>\n**Tool Call Budgets** (Prevent excessive searching):\n- **Simple queries**: Use 2-3 search tool calls maximum\n- **Complex queries**: Use up to 5 search tool calls maximum\n- **Always stop**: After 5 search tool calls if you cannot find the right sources\n\n**Stop Immediately When**:\n- You can answer the user's question comprehensively\n- You have 3+ relevant examples/sources for the question\n- Your last 2 searches returned similar information\n</Hard Limits>\n\n<Show Your Thinking>\nAfter each search tool call, analyze the results:\n- What key information did I find?\n- What's missing?\n- Do I have enough to answer the question comprehensively?\n- Should I search more or provide my answer?\n</Show Your Thinking>\n\nOUTPUT_SCHEMA (strict):\n{\n  \"topic\": \"string\",\n  \"executive_summary\": \"string (80-200 words)\",\n  \"report_markdown\": \"string (markdown, include inline refs like [1], [2] that map to sources)\",\n  \"sources\": [\n    { \"title\": \"string\", \"url\": \"string\" }\n  ]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        320
+      ],
+      "id": "d30dff42-3328-46d6-a797-587f8c5cf0b0",
+      "name": "AI Agent",
+      "notesInFlow": true,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5-nano",
+          "mode": "list",
+          "cachedResultName": "gpt-5-nano"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        528
+      ],
+      "id": "b5ac1e47-ed45-455c-bfa9-6dc92e4049f8",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "9gfuYNLu9jltmsjA",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 8
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        976,
+        544
+      ],
+      "id": "853d6ef6-748b-4306-af5f-9a277f7b1e69",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', `queries especificas a investigar!`, 'string') }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        544
+      ],
+      "id": "14ed83db-21b7-4305-abe7-8f91bdeb39d5",
+      "name": "Search in Tavily",
+      "credentials": {
+        "tavilyApi": {
+          "id": "SFBX8lm4802VwkNS",
+          "name": "Tavily account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9f164504-31ab-433c-93dc-aa37eedec693",
+              "name": "sessionId",
+              "value": "={{ $('When Executed by Another Workflow').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "92465f9d-2f25-458b-b228-827a32ef60ed",
+              "name": "brief",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "28c6e723-b62b-4444-bdb1-9253cc0db7c1",
+              "name": "language",
+              "value": "={{ $('When Executed by Another Workflow').item.json.language }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        816,
+        320
+      ],
+      "id": "a2e32df9-717a-4e69-a9b4-a293a3398f32",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"topic\": \"string\",\n  \"executive_summary\": \"string (80-200 words)\",\n  \"report_markdown\": \"string (markdown, include inline refs like [1], [2] that map to sources)\",\n  \"sources\": [\n    { \"title\": \"string\", \"url\": \"string\" }\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1232,
+        544
+      ],
+      "id": "5639f7de-d4cd-4474-88c3-b3e67e64e142",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5-nano",
+          "mode": "list",
+          "cachedResultName": "gpt-5-nano"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1152,
+        704
+      ],
+      "id": "c14a25c7-303c-4371-8c02-2e272800d3a5",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "9gfuYNLu9jltmsjA",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You will be given a set of messages that have been exchanged so far between yourself and the user. \nYour job is to translate these messages into a more detailed and concrete research question that will be used to guide the research.\n\nThe messages that have been exchanged so far between yourself and the user are:\n<Messages>\n{{ $json.brief }}\n</Messages>\n\n\nToday's date is {{ $today.format('yyyy-MM-dd') }}.\n\nYou will return a single research question that will be used to guide the research.\n\nGuidelines:\n1. Maximize Specificity and Detail\n- Include all known user preferences and explicitly list key attributes or dimensions to consider.\n- It is important that all details from the user are included in the instructions.\n\n2. Handle Unstated Dimensions Carefully\n- When research quality requires considering additional dimensions that the user hasn't specified, acknowledge them as open considerations rather than assumed preferences.\n- Example: Instead of assuming \"budget-friendly options,\" say \"consider all price ranges unless cost constraints are specified.\"\n- Only mention dimensions that are genuinely necessary for comprehensive research in that domain.\n\n3. Avoid Unwarranted Assumptions\n- Never invent specific user preferences, constraints, or requirements that weren't stated.\n- If the user hasn't provided a particular detail, explicitly note this lack of specification.\n- Guide the researcher to treat unspecified aspects as flexible rather than making assumptions.\n\n4. Distinguish Between Research Scope and User Preferences\n- Research scope: What topics/dimensions should be investigated (can be broader than user's explicit mentions)\n- User preferences: Specific constraints, requirements, or preferences (must only include what user stated)\n- Example: \"Research coffee quality factors (including bean sourcing, roasting methods, brewing techniques) for San Francisco coffee shops, with primary focus on taste as specified by the user.\"\n\n5. Use the First Person\n- Phrase the request from the perspective of the user.\n\n6. Sources\n- If specific sources should be prioritized, specify them in the research question.\n- For product and travel research, prefer linking directly to official or primary websites (e.g., official brand sites, manufacturer pages, or reputable e-commerce platforms like Amazon for user reviews) rather than aggregator sites or SEO-heavy blogs.\n- For academic or scientific queries, prefer linking directly to the original paper or official journal publication rather than survey papers or secondary summaries.\n- For people, try linking directly to their LinkedIn profile, or their personal website if they have one.\n- If the query is in a specific language, prioritize sources published in that language."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        432,
+        320
+      ],
+      "id": "53a58174-fa65-4238-b528-3ccbe67a23a4",
+      "name": "research_topic_prompt",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "s5x6esvHGIEK3zLc",
+          "name": "Google Gemini(PaLM) Api Taller Bnacolombia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        864,
+        544
+      ],
+      "id": "b9d745c6-9d7c-4ad4-bd1e-fc5840a1ba4d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "s5x6esvHGIEK3zLc",
+          "name": "Google Gemini(PaLM) Api Taller Bnacolombia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recorre todos los items de entrada\nfor (const item of $input.all()) {\n\t// Tomamos el array de fuentes del item\n\tconst sources = $input.first().json.output.sources ?? [];\n\n\t// Construimos las líneas en formato Markdown:\n\t// [1] [Título](URL)\n\tconst markdownSources = sources.map((src, index) => {\n\t\tconst n = index + 1;\n\t\treturn `[${n}] [${src.title}](${src.url})`;\n\t});\n\n\t// Guardamos el resultado en un nuevo campo\n\titem.json.sources_markdown = markdownSources.join('\\n');\n}\n\n// Devolvemos los items modificados\nreturn $input.all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        304
+      ],
+      "id": "b6fccb44-9cb0-4e49-9bf0-7ba9ba9c0b6e",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c4739f04-bbbc-4e78-b041-66a19acb06b1",
+              "name": "research",
+              "value": "={{ $('parcer_to_html').item.json.content.parts[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "061f1556-93e1-40e7-897f-f74c9c14e29f",
+              "name": "executive_summary",
+              "value": "={{ $('Code').item.json.output.executive_summary }}",
+              "type": "string"
+            },
+            {
+              "id": "60e8ec6a-8a74-4809-b648-1fa9f4ea3814",
+              "name": "sources",
+              "value": "={{ $('Code').item.json.output.sources }}",
+              "type": "array"
+            },
+            {
+              "id": "e3bdb1b3-02f2-4861-ae60-0156033c4d8b",
+              "name": "research_url",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2112,
+        288
+      ],
+      "id": "99d6a78e-e24e-48b9-b356-595d7c0cce88",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "URL/HTML to PDF",
+        "convertType": "htmlToPDF",
+        "html": "={{ $json.content.parts[0].text }}",
+        "advancedOptions": {}
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        1872,
+        304
+      ],
+      "id": "02646d78-af60-4f99-b06d-ebddb5380e85",
+      "name": "PDFco Api",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "L6NHU3icbK1hdIpV",
+          "name": "PDF.co account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Based on all the research conducted, create a comprehensive, well-structured HTML report for the overall research.\n\nFor context, today's date is {{ $today.format('yyyy-MM-dd') }} and language is \n{{ $('Edit Fields').item.json.language }}\n\n<Research Topic>\n{{ $json.output.topic }}\n</Research Topic>\n\n<Research report>\n{{ $json.output.report_markdown }}\n</Research report>\n\n<Sources>\n{{ $json.sources_markdown }}\n</Sources>\n\nCRITICAL: Make sure the answer is written in the same language specified at the beginning! \nIf no language is specified, Spanish MUST be used by default.\n\n\nOUTPUT FORMAT REQUIREMENTS\nYou MUST output a single, valid HTML document. Do NOT use Markdown. Do NOT wrap the HTML in backticks.\nUse this structure:\n\n<html>\n  <head>\n    <meta charset=\"UTF-8\" />\n    <title>Research Report</title>\n    <style>\n      body { font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; line-height: 1.6; }\n      h1, h2, h3 { margin-top: 1.2em; }\n      ul, ol { margin-left: 1.5em; }\n      .meta-block { font-size: 0.95em; color: #555; margin-bottom: 1.5em; }\n      .sources-list li { margin-bottom: 0.2em; }\n      .exec-summary { border: 1px solid #ddd; padding: 1em 1.2em; margin-bottom: 2em; background: #fafafa; }\n      .exec-summary h2 { margin-top: 0; }\n    </style>\n  </head>\n  <body>\n    <!-- Your content goes here -->\n  </body>\n</html>\n\nInside <body>, you MUST:\n\n1. Start with:\n   - <h1> as the main title of the report (use the research topic).\n   - A small meta block (<p class=\"meta-block\">) that includes:\n     • The preparation date  \n     • The language of the report  \n   - A COMPLETE EXECUTIVE SUMMARY SECTION wrapped in a <div class=\"exec-summary\">.\n\n2. The executive summary section (title MUST be translated into the target language, e.g. “Resumen ejecutivo” in Spanish, “Executive Summary” in English) MUST contain, in clear paragraphs and/or bullet lists:\n\n   - Purpose and scope of the research:\n     • What this report is about  \n     • For whom it is relevant and why it matters  \n\n   - Research approach / methodology (at a high level):\n     • How the information was obtained (desk research, web sources, etc.)  \n     • Types of sources used (industry reports, news, academic papers, etc.)  \n\n   - Key findings and insights:\n     • 3–7 of the most important insights or conclusions  \n     • Quantitative or qualitative highlights where available  \n\n   - Opportunities / implications:\n     • Main opportunities, benefits or strategic implications identified  \n\n   - Risks and limitations:\n     • Main risks, constraints or uncertainties that decision-makers should keep in mind  \n\n   - Clear, actionable recommendations / next steps:\n     • 3–7 concrete actions or strategic recommendations derived from the findings  \n\n   Use headings and/or bold text inside this section to make each block visually clear.\n\n3. After the executive summary, build the DETAILED report with proper HTML headings:\n   - <h2> for main sections\n   - <h3> for subsections\n\n   Suggested structure (you can adapt it as needed):\n\n   - <h2>Background and Context</h2>\n   - <h2>Key Concepts / Components</h2>\n     - <h3>Concept 1</h3>\n     - <h3>Concept 2</h3>\n   - <h2>Market / Industry / Competitive Analysis</h2> (when relevant)\n   - <h2>Technical Analysis</h2> (when relevant)\n   - <h2>Risks, Limitations and Open Questions</h2>\n   - <h2>Conclusions and Actionable Recommendations</h2>\n   - <h2>Sources</h2>\n\n4. Throughout the body:\n   - Include specific facts and insights from the research.\n   - Reference relevant sources in the text using citation markers like [1], [2], [3], etc.\n   - Use simple, clear language.\n   - Do NOT refer to yourself (no \"I\", \"as an AI\", etc.). This must read like a professional report.\n   - Do not describe what you are doing; just present the content.\n   - Each section should be as long as necessary to deeply answer the question with the information you have gathered.\n   - Use <ul><li>...</li></ul> for bullet lists when appropriate; otherwise, use paragraphs (<p>...</p>).\n\nREMEMBER:\nThe brief and research may be in English, but you need to translate this information to the right language when writing the final answer.\nMake sure the final answer report is in the SAME language as the human messages in the message history or as specified at the beginning.\n\n<Citation Rules>\n- In the body text, reference sources using bracketed numbers like [1], [2], [3] that correspond to the final sources list.\n- At the end of the report, create a <h2>Sources</h2> section followed by an ordered list:\n  <ol class=\"sources-list\">\n    <li>[1] Source Title: <a href=\"URL\">URL</a></li>\n    <li>[2] Source Title: <a href=\"URL\">URL</a></li>\n    ...\n  </ol>\n- Assign each unique URL a single citation number.\n- Number sources sequentially without gaps (1,2,3,4...) in the final list regardless of which sources you choose.\n- Citations are extremely important. Make sure to include these, and pay a lot of attention to getting these right.\n</Citation Rules>\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1552,
+        304
+      ],
+      "id": "ba183346-f35f-47c8-8770-ae8f54e5ace3",
+      "name": "parcer_to_html",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "s5x6esvHGIEK3zLc",
+          "name": "Google Gemini(PaLM) Api Taller Bnacolombia"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "research_topic_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search in Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "research_topic_prompt": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "parcer_to_html",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFco Api": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parcer_to_html": {
+      "main": [
+        [
+          {
+            "node": "PDFco Api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9718ee9f-03ce-451d-8313-ccdf16e5c07a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "22b6dc15401a371393f304a8b794ac6e288480aac7df45828467bb69688323ea"
+  },
+  "id": "44AJMnw7f3TNaMpG",
+  "tags": []
+}
